@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="Logo3.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Networking Flashcards</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --success: #10b981;
+      --error: #ef4444;
+      --background: #1a1b26;
+      --card-bg: #24283b;
+      --text: #c0caf5;
+    }
+
+    body {
+      background-color: var(--background);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .flashcard {
+      perspective: 1000px;
+      height: 300px;
+    }
+
+    @media (max-width: 640px) {
+      .flashcard {
+        height: 250px;
+      }
+    }
+
+    .flashcard-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      transition: transform 0.8s;
+      transform-style: preserve-3d;
+    }
+
+    .flashcard.flipped .flashcard-inner {
+      transform: rotateY(180deg);
+    }
+
+    .flashcard-front,
+    .flashcard-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      background-color: var(--card-bg);
+      border: 2px solid #374151;
+      border-radius: 1rem;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .flashcard-back {
+      transform: rotateY(180deg);
+    }
+
+    .progress-bar {
+      height: 6px;
+      transition: width 0.3s ease;
+      border-radius: 3px;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .animate-slide-in {
+      animation: slideIn 0.3s ease forwards;
+    }
+
+    .btn {
+      transition: all 0.2s ease;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    textarea {
+      background-color: var(--card-bg);
+      color: var(--text);
+      border-color: #374151;
+    }
+
+    textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    }
+
+    /* Glassmorphism effect for cards */
+    .glass-effect {
+      background: rgba(36, 40, 59, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--background);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #4b5563;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #6b7280;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <h1 class="text-4xl font-bold text-center text-indigo-400 mb-8 sm:text-5xl">Networking Flashcards</h1>
+
+    <!-- Progress bar -->
+    <div class="bg-gray-700 rounded-full mb-8">
+      <div class="progress-bar bg-indigo-500" id="progressBar"></div>
+    </div>
+
+    <!-- Card counter -->
+    <div class="text-center mb-6 text-indigo-300" id="cardCounter"></div>
+
+    <!-- Flashcard -->
+    <div class="flashcard mb-8" id="flashcard">
+      <div class="flashcard-inner">
+        <div class="flashcard-front glass-effect">
+          <div class="text-xl text-indigo-100 sm:text-2xl" id="questionText"></div>
+        </div>
+        <div class="flashcard-back glass-effect">
+          <div class="text-xl text-indigo-100 sm:text-2xl" id="answerText"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Response area -->
+    <div class="glass-effect rounded-xl p-6 mb-8 animate-slide-in">
+      <label class="block text-sm font-medium text-indigo-300 mb-2">Your Response:</label>
+      <textarea id="responseField"
+        class="w-full px-4 py-3 text-indigo-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none glass-effect"
+        rows="4" placeholder="Type your answer here..."></textarea>
+    </div>
+
+    <!-- Controls -->
+    <div class="flex flex-col gap-4 sm:flex-row sm:justify-between">
+      <div class="flex gap-2 flex-wrap sm:flex-nowrap">
+        <button id="prevBtn"
+          class="btn bg-gray-700 text-white px-6 py-3 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed flex-1 sm:flex-none">
+          Previous
+        </button>
+        <button id="flipBtn"
+          class="btn bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-500 flex-1 sm:flex-none">
+          Flip Card
+        </button>
+        <button id="nextBtn"
+          class="btn bg-gray-700 text-white px-6 py-3 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed flex-1 sm:flex-none">
+          Next
+        </button>
+      </div>
+      <div class="flex gap-2">
+        <button id="markCorrectBtn"
+          class="btn bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-500 flex-1 sm:flex-none">
+          Correct
+        </button>
+        <button id="markIncorrectBtn"
+          class="btn bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-500 flex-1 sm:flex-none">
+          Incorrect
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Previous JavaScript code remains the same
+    const flashcards = [
+      {
+        question: "What are the layers of the OSI Model?",
+        answer: "7 Layers: Physical, Data Link, Network, Transport, Session, Presentation, Application"
+      },
+      {
+        question: "What is an IP address?",
+        answer: "A unique numerical identifier assigned to each device on a network. IPv4 (e.g., 192.168.1.1) and IPv6 (e.g., 2001:0db8:85a3:0000:0000:8a2e:0370:7334)"
+      },
+      {
+        question: "What is subnetting?",
+        answer: "Dividing a network into smaller subnetworks to improve performance and security."
+      },
+      {
+        question: "What is DHCP used for?",
+        answer: "Dynamically assigning IP addresses and configuration parameters to devices on a network."
+      },
+      {
+        question: "What do routers and switches do?",
+        answer: "Routers connect different networks, while switches connect devices within the same network."
+      },
+      {
+        question: "What is a VLAN?",
+        answer: "A Virtual Local Area Network that segments network traffic logically."
+      },
+      {
+        question: "Name one basic network security measure.",
+        answer: "Implementing firewalls to monitor and control incoming/outgoing network traffic."
+      },
+      {
+        question: "What is AV over IP?",
+        answer: "A method to distribute audio and video signals over an IP network for improved scalability and flexibility."
+      },
+      {
+        question: "Name one Wi-Fi standard and its benefits.",
+        answer: "802.11ac: offers higher throughput and better performance over the 5GHz frequency."
+      },
+      {
+        question: "What is Quality of Service (QoS) in networking?",
+        answer: "QoS prioritizes traffic to ensure optimal performance for critical applications like streaming media."
+      },
+      {
+        question: "How do smart devices integrate into a network?",
+        answer: "They use wireless protocols like Zigbee, Z-Wave, or Wi-Fi to communicate with hubs or directly with each other."
+      },
+      {
+        question: "What is the role of a CISO?",
+        answer: "The Chief Information Security Officer is responsible for overseeing and implementing an organization's security strategy."
+      },
+      {
+        question: "What is Zero Trust Security?",
+        answer: "A security model that assumes no implicit trust and requires continuous verification of user and device identities."
+      }
+    ];
+
+    class FlashcardApp {
+      constructor() {
+        this.currentIndex = 0;
+        this.isFlipped = false;
+        this.loadFromLocalStorage();
+        this.initializeElements();
+        this.addEventListeners();
+        this.updateUI();
+      }
+
+      initializeElements() {
+        this.flashcardEl = document.getElementById('flashcard');
+        this.questionEl = document.getElementById('questionText');
+        this.answerEl = document.getElementById('answerText');
+        this.responseField = document.getElementById('responseField');
+        this.prevBtn = document.getElementById('prevBtn');
+        this.nextBtn = document.getElementById('nextBtn');
+        this.flipBtn = document.getElementById('flipBtn');
+        this.markCorrectBtn = document.getElementById('markCorrectBtn');
+        this.markIncorrectBtn = document.getElementById('markIncorrectBtn');
+        this.progressBar = document.getElementById('progressBar');
+        this.cardCounter = document.getElementById('cardCounter');
+      }
+
+      loadFromLocalStorage() {
+        const savedState = localStorage.getItem('flashcardState');
+        if (savedState) {
+          const state = JSON.parse(savedState);
+          this.responses = state.responses || {};
+          this.results = state.results || {};
+        } else {
+          this.responses = {};
+          this.results = {};
+        }
+      }
+
+      saveToLocalStorage() {
+        const state = {
+          responses: this.responses,
+          results: this.results
+        };
+        localStorage.setItem('flashcardState', JSON.stringify(state));
+      }
+
+      updateUI() {
+        this.questionEl.textContent = flashcards[this.currentIndex].question;
+        this.answerEl.textContent = flashcards[this.currentIndex].answer;
+        this.responseField.value = this.responses[this.currentIndex] || '';
+        this.prevBtn.disabled = this.currentIndex === 0;
+        this.nextBtn.disabled = this.currentIndex === flashcards.length - 1;
+        const progress = ((this.currentIndex + 1) / flashcards.length) * 100;
+        this.progressBar.style.width = `${progress}%`;
+        this.cardCounter.textContent = `Card ${this.currentIndex + 1} of ${flashcards.length}`;
+        this.updateCardStatus();
+      }
+
+      updateCardStatus() {
+        const result = this.results[this.currentIndex];
+        const frontCard = this.flashcardEl.querySelector('.flashcard-front');
+        const backCard = this.flashcardEl.querySelector('.flashcard-back');
+
+        frontCard.style.borderColor = '';
+        backCard.style.borderColor = '';
+
+        if (result === 'correct') {
+          frontCard.style.borderColor = '#10b981';
+          backCard.style.borderColor = '#10b981';
+        } else if (result === 'incorrect') {
+          frontCard.style.borderColor = '#ef4444';
+          backCard.style.borderColor = '#ef4444';
+        }
+      }
+
+      addEventListeners() {
+        this.prevBtn.addEventListener('click', () => {
+          if (this.currentIndex > 0) {
+            this.currentIndex--;
+            this.isFlipped = false;
+            this.flashcardEl.classList.remove('flipped');
+            this.updateUI();
+          }
+        });
+
+        this.nextBtn.addEventListener('click', () => {
+          if (this.currentIndex < flashcards.length - 1) {
+            this.currentIndex++;
+            this.isFlipped = false;
+            this.flashcardEl.classList.remove('flipped');
+            this.updateUI();
+          }
+        });
+
+        this.flipBtn.addEventListener('click', () => {
+          this.isFlipped = !this.isFlipped;
+          this.flashcardEl.classList.toggle('flipped');
+        });
+
+        this.responseField.addEventListener('input', (e) => {
+          this.responses[this.currentIndex] = e.target.value;
+          this.saveToLocalStorage();
+        });
+
+        this.markCorrectBtn.addEventListener('click', () => {
+          this.results[this.currentIndex] = 'correct';
+          this.saveToLocalStorage();
+          this.updateUI();
+        });
+
+        this.markIncorrectBtn.addEventListener('click', () => {
+          this.results[this.currentIndex] = 'incorrect';
+          this.saveToLocalStorage();
+          this.updateUI();
+        });
+      }
+    }
+
+    // Initialize the app
+    document.addEventListener('DOMContentLoaded', () => {
+      new FlashcardApp();
+    });
+  </script>
+</body>
+
+</html>
